@@ -3,7 +3,6 @@ import Users from "./Users";
 import * as axios from "axios";
 import style from './Users.module.scss';
 import Month from "./Month";
-import Preloader from "../Preloader/Preloader";
 
 
 class UsersContainer extends React.Component{
@@ -11,12 +10,10 @@ class UsersContainer extends React.Component{
     constructor(props){
         super(props);
         this.state={
-            isFetching: false,
-            monthNumber: 0,
-            quantity: 0,
             users:null,
-            monthUsers:null,
-            monthNumbers : [
+            selectedMonthUsers:null,
+            monthListWithColors:null,
+            monthList : [
                 "January",
                 "February",
                 "March",
@@ -33,52 +30,71 @@ class UsersContainer extends React.Component{
         }
     }
 
+    componentDidMount() {
+        this.setUsers();
+    }
+
+    setUsers = ()=>{
+        this.getUsers().then(users=> {
+            this.setState({users:users});
+            let monthListWithColors = this.createMonthListWithColors();
+            this.setState({monthListWithColors: monthListWithColors});
+        });
+    };
+
     getUsers=()=>{
         return axios.get("https://yalantis-react-school-api.yalantis.com/api/task0/users").then(response=>{
             return response.data;
         })
     };
 
-    fetchUsers=(monthNumber)=>{
-            let usersList =  this.state.users.filter(user=>{
-                let date = (new Date(user.dob)).getMonth();
-                if(date === monthNumber){
-                    return user;
-                }
-            });
-        this.setState({monthUsers:usersList}) ;
+    createMonthListWithColors =()=>{
+        return this.state.monthList.map((month, index)=>{
+            let monthUsers = this.getMonthUsers(index);
+            let color = this.getMonthColor(monthUsers.length);
+            return {month, color};
+        });
     };
 
-    componentDidMount() {
-        // устанавливаем список юзеров при монтировании компонента
-        this.setState({isFetching:true});
-        this.getUsers().then(result=>{
-            this.setState({users:result});
+    getMonthColor = (usersQuantity)=>{
+        if(usersQuantity <=2){
+            return "grey";
+        }else if(usersQuantity<=6 && usersQuantity >=3){
+            return "blue";
+        }else if(usersQuantity<=10 && usersQuantity >=7){
+            return "green";
+        }else if(usersQuantity>=11){
+            return "red";
+        }
+    };
+
+    getMonthUsers=(monthNumber)=>{
+        return  this.state.users.filter(user=>{
+            let month = (new Date(user.dob)).getMonth();
+            if(month === monthNumber){
+                return user;
+            }
         });
-        this.setState({isFetching:false});
-    }
-    componentDidUpdate() {
-        console.log("componentdidUPDATE")
-    }
+    };
+
+    setMonthUsers=(monthNumber)=>{
+        let monthUsers = this.getMonthUsers(monthNumber);
+        this.setState({selectedMonthUsers:monthUsers});
+    };
 
     render() {
-           if(this.state.isFetching){
-                return <Preloader/>;
-           }
-           console.log("render");
         return(
-
             <div className={style.page_container}>
                 <header className={style.months}>
                     <ul className={style.months_list}>
-                        {this.state.monthNumbers.map((month, index)=>{
-                            return <Month  key={index} fetchUsers={this.fetchUsers} getUsers={this.getUsers} monthName={month} monthNumber={index} />
+                        {this.state.monthListWithColors && this.state.monthListWithColors.map((month, index)=>{
+                            return <Month key={index} setMonthUsers={this.setMonthUsers} color={month.color} monthName={month.month} monthNumber={index} />
                         })}
                     </ul>
                 </header>
                 <div className={style.users}>
                     {
-                        this.state.monthUsers && <Users users={this.state.monthUsers}/>
+                        this.state.selectedMonthUsers && <Users users={this.state.selectedMonthUsers}/>
                     }
                 </div>
             </div>

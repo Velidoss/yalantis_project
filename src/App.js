@@ -4,7 +4,7 @@ import UsersContainer from "./components/Users/UsersContainer";
 
 function App() {
   return (
-    <div className={style.app}>
+    <div >
       <UsersContainer />
     </div>
   );
